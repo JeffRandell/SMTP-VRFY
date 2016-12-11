@@ -35,48 +35,64 @@ def printalert(output):
 End snippet for gsstyle.py.
 '''
 
-
+# Help section
+#
 if len(sys.argv) != 4:
     print "Usage: ./smtp-vrfy.py <ip.addr> <port> <input_file>"
     print
-    print "Example:"
-    print "     # ./smtp-vrfy.py 10.11.5.14 25 usernames.txt"
+    print "ARGUMENT        FORMAT  DESCRIPTION"
+    print " <ip.addr>       IPv4    IP address of host you want to test."
+    print " <port>          int     Destination (server) port to use. Typically 25."
+    print " <input_file>    str     File with list of usernames to VRFY."
+    print
+    print "Ex:"
+    print "  # ./smtp-vrfy.py 10.11.1.254 25 usernames.txt"
     print
     sys.exit(0)
 
-# Create a socket
+
+               
+# Set skip value
+skip = 0
+
+# Create the socket
 printinfo(["Creating socket..."])
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Connect to the server
 printinfo(["Connecting to", sys.argv[1], "on port", sys.argv[2], "..."])
-connect = s.connect((str(sys.argv[1]), int(sys.argv[2])))
+try:
+    connect = s.connect((sys.argv[1], int(sys.argv[2])))
+except:
+    printalert(["Cannot connect to", sys.argv[1], "...!"])
+    printinfo(["Ending ..."])
+    skip = 1
 
 # Receive the banner
-printinfo(["Retrieving banner..."])
-banner = s.recv(1024)
-printresult([banner])
+if skip != 1:
+    printinfo(["Retrieving banner..."])
+    banner = s.recv(1024)
+    printresult([banner])
 
 # Ingest file of usernames
-with open(sys.argv[3]) as f:
-    namelist = f.readlines()
+if skip != 1:
+    with open(sys.argv[3]) as f:
+        namelist = f.readlines()
 
 # Strip escaped newlines
-namelist = [x.strip('\n') for x in namelist]
-
-printinfo(["Testing usernames in", sys.argv[3], "..."])
-#for name in namelist:
-#    print name
+if skip != 1:
+    namelist = [x.strip('\n') for x in namelist]
+    printinfo(["Testing usernames in", sys.argv[3], "..."])
 
 # VRFY the usernames
-for name in namelist:
-    if name != '':
-        s.send('VRFY ' + name + '\r\n')
-        result = s.recv(1024)
-        if "550" not in result:
-            printresult([result])
+if skip != 1:
+    for name in namelist:
+        if name != '':
+            s.send('VRFY ' + name + '\r\n')
+            result = s.recv(1024)
+            if "550" not in result:
+                printresult([result])
 
 # Close the socket
-printinfo(["Closing the socket..."])
+printinfo(["Closing socket..."])
 s.close()
-
